@@ -105,6 +105,7 @@ int main(int argc, char *argv[])
 
 void parse_file(FILE *fptr, int matrix[][NUM_RESOURCES], int rows, int cols)
 {
+    //funcntion to parse the file and store the data in a matrix
     char line[MAX_LINE];
     int i = 0;
     while (fgets(line, 20, fptr) && i < rows)
@@ -124,6 +125,7 @@ void parse_file(FILE *fptr, int matrix[][NUM_RESOURCES], int rows, int cols)
 
 void print()
 {
+    // function to print the current state of the system (invoked on * command)
     printf("Maximum\t\tAllocation\tNeed\n");
     for (int i = 0; i < NUM_CUSTOMERS; i++)
     {
@@ -147,6 +149,7 @@ void print()
 
 void copy_matrix(int dest[][NUM_RESOURCES], int src[][NUM_RESOURCES], int rows, int cols)
 {
+    //function to copy a matrix to another matrix
     for (int i = 0; i < rows; i++)
     {
         for (int j = 0; j < cols; j++)
@@ -238,6 +241,7 @@ int request_resources(int customer_num, int request[])
 void release_resources(int customer_num, int release[])
 {
     int i;
+    // check if release is greater than allocation for any of the resources
     for (i = 0; i < NUM_RESOURCES; ++i)
     {
         if (release[i] > allocation[customer_num][i])
@@ -271,7 +275,7 @@ void trim(const char *input, char *output, int output_size)
         end--;
 
     // Calculate length to copy (add 1 to include the last char)
-    size_t len = end - input + 1;
+    int len = end - input + 1;
     if (len >= output_size)
         len = output_size - 1;
 
