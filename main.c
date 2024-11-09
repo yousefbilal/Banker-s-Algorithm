@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 
 #define NUM_CUSTOMERS 5
 #define NUM_RESOURCES 4
@@ -21,6 +22,7 @@ void release_resources(int customer_num, int release[]);
 void print();
 void parse_file(FILE *fptr, int matrix[][NUM_RESOURCES], int rows, int cols);
 void copy_matrix(int dest[][NUM_RESOURCES], int src[][NUM_RESOURCES], int rows, int cols);
+void trim(const char *input, char *output, int output_size);
 
 int main(int argc, char *argv[])
 {
@@ -41,15 +43,16 @@ int main(int argc, char *argv[])
     print();
 
     char input[100];
-    char trimmed_input[sizeof input];
-    int resources[NUM_RESOURCES];
+    char trimmed_input[100] = {0};
+    int resources[NUM_RESOURCES + 1];
     char *command;
     while (1)
     {
+        printf("Enter command: ");
         if (fgets(input, sizeof input, stdin) != NULL)
         {
             // trim input from whitespaces
-            sscanf(input, " %99[^\n]", trimmed_input);
+            trim(input, trimmed_input, sizeof trimmed_input);
             // exit if user types exit
             if (strcmp(trimmed_input, "exit") == 0)
                 break;
@@ -72,15 +75,21 @@ int main(int argc, char *argv[])
             while (token != NULL)
             {
                 token = strtok(NULL, " ");
-                resources[i] = atoi(token);
-                i++;
+                if (token != NULL)
+                {
+                    resources[i] = atoi(token);
+                    i++;
+                }
             }
             // check the command RQ and RL
             if (strcmp(command, "RQ") == 0)
             {
-                request_resources(resources[0], resources + 1);
+                if (request_resources(resources[0], resources + 1) == 0)
+                    printf("Request is granted\n");
+                else
+                    printf("Request is denied\n");
             }
-            else if (strcmp(token, "RL") == 0)
+            else if (strcmp(command, "RL") == 0)
             {
                 release_resources(resources[0], resources + 1);
             }
@@ -129,7 +138,7 @@ void print()
         printf("\n");
     }
     printf("Available: ");
-    for (int i = 0; i < NUM_CUSTOMERS; i++)
+    for (int i = 0; i < NUM_RESOURCES; i++)
     {
         printf("%d ", available[i]);
     }
@@ -161,6 +170,15 @@ int request_resources(int customer_num, int request[])
             return -1;
         }
     }
+    // pretend to allocate requested resources
+
+    for (i = 0; i < NUM_RESOURCES; i++)
+    {
+        available[i] -= request[i];
+        allocation[customer_num][i] += request[i];
+        need[customer_num][i] -= request[i];
+    }
+
     // safety algorithm
     // STEP1: initialize work and finish arrays
     int work[NUM_RESOURCES];
@@ -174,7 +192,7 @@ int request_resources(int customer_num, int request[])
         finish[i] = 0;
     }
     // STEP2: find an i such that both finish[i] == 0 and need[i] <= work
-    int i = 0;
+    i = 0;
     while (i < NUM_CUSTOMERS)
     {
         if (finish[i] == 0)
@@ -204,17 +222,16 @@ int request_resources(int customer_num, int request[])
     {
         if (finish[i] == 0)
         {
+            // restore old state
+            for (i = 0; i < NUM_RESOURCES; i++)
+            {
+                available[i] += request[i];
+                allocation[customer_num][i] -= request[i];
+                need[customer_num][i] += request[i];
+            }
             printf("Request is unsafe\n");
             return -1;
         }
-    }
-
-    // update resources
-    for (i = 0; i < NUM_RESOURCES; i++)
-    {
-        available[i] -= request[i];
-        allocation[customer_num][i] += request[i];
-        need[customer_num][i] -= request[i];
     }
     return 0;
 }
@@ -235,4 +252,30 @@ void release_resources(int customer_num, int release[])
         allocation[customer_num][i] -= release[i];
         need[customer_num][i] += release[i];
     }
+    printf("Resources are released\n");
+}
+
+void trim(const char *input, char *output, int output_size)
+{
+    if (!input || !output || output_size == 0)
+        return;
+
+    // Skip leading whitespace
+    while (*input && isspace(*input))
+        input++;
+
+    // Copy non-whitespace characters
+    const char *end = input + strlen(input) - 1;
+    // Find last non-whitespace character
+    while (end > input && isspace(*end))
+        end--;
+
+    // Calculate length to copy (add 1 to include the last char)
+    size_t len = end - input + 1;
+    if (len >= output_size)
+        len = output_size - 1;
+
+    // Copy the trimmed portion
+    strncpy(output, input, len);
+    output[len] = '\0';
 }
