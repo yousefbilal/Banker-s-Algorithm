@@ -19,34 +19,8 @@ int need[NUM_CUSTOMERS][NUM_RESOURCES];
 int request_resources(int customer_num, int request[]);
 void release_resources(int customer_num, int release[]);
 void print();
-
-void parse_file(FILE *fptr, int matrix[][NUM_RESOURCES], int rows, int cols)
-{
-    char line[MAX_LINE];
-    int i = 0;
-    while (fgets(line, 20, fptr) && i < rows)
-    {
-
-        char *token = strtok(line, ",");
-        int j = 0;
-        while (token != NULL)
-        {
-            matrix[i][j] = atoi(token);
-            token = strtok(NULL, ",");
-            ++j;
-        }
-        ++i;
-    }
-}
-
-void copy_matrix(int dest[][NUM_RESOURCES], int src[][NUM_RESOURCES], int rows, int cols)
-{
-    for (int i = 0; i < rows; i++)
-    {
-        for (int j = 0; j < cols; j++)
-            dest[i][j] = src[i][j];
-    }
-}
+void parse_file(FILE *fptr, int matrix[][NUM_RESOURCES], int rows, int cols);
+void copy_matrix(int dest[][NUM_RESOURCES], int src[][NUM_RESOURCES], int rows, int cols);
 
 int main(int argc, char *argv[])
 {
@@ -120,6 +94,25 @@ int main(int argc, char *argv[])
     return 0;
 }
 
+void parse_file(FILE *fptr, int matrix[][NUM_RESOURCES], int rows, int cols)
+{
+    char line[MAX_LINE];
+    int i = 0;
+    while (fgets(line, 20, fptr) && i < rows)
+    {
+
+        char *token = strtok(line, ",");
+        int j = 0;
+        while (token != NULL)
+        {
+            matrix[i][j] = atoi(token);
+            token = strtok(NULL, ",");
+            ++j;
+        }
+        ++i;
+    }
+}
+
 void print()
 {
     printf("Maximum\t\tAllocation\tNeed\n");
@@ -141,4 +134,105 @@ void print()
         printf("%d ", available[i]);
     }
     printf("\n\n");
+}
+
+void copy_matrix(int dest[][NUM_RESOURCES], int src[][NUM_RESOURCES], int rows, int cols)
+{
+    for (int i = 0; i < rows; i++)
+    {
+        for (int j = 0; j < cols; j++)
+            dest[i][j] = src[i][j];
+    }
+}
+
+int request_resources(int customer_num, int request[])
+{
+    int i;
+    for (i = 0; i < NUM_RESOURCES; i++)
+    {
+        if (request[i] > need[customer_num][i])
+        {
+            printf("Request is greater than need\n");
+            return -1;
+        }
+        if (request[i] > available[i])
+        {
+            printf("Request is greater than available\n");
+            return -1;
+        }
+    }
+    // safety algorithm
+    // STEP1: initialize work and finish arrays
+    int work[NUM_RESOURCES];
+    int finish[NUM_CUSTOMERS];
+    for (i = 0; i < NUM_RESOURCES; i++)
+    {
+        work[i] = available[i];
+    }
+    for (i = 0; i < NUM_CUSTOMERS; i++)
+    {
+        finish[i] = 0;
+    }
+    // STEP2: find an i such that both finish[i] == 0 and need[i] <= work
+    int i = 0;
+    while (i < NUM_CUSTOMERS)
+    {
+        if (finish[i] == 0)
+        {
+            int j;
+            for (j = 0; j < NUM_RESOURCES; ++j)
+            {
+                if (need[i][j] > work[j])
+                    break;
+            }
+            // if need[i] <= work and finish[i] == 0, then work += allocation[i] and finish[i] = 1
+            if (j == NUM_RESOURCES)
+            {
+                for (j = 0; j < NUM_RESOURCES; ++j)
+                {
+                    work[j] += allocation[i][j];
+                }
+                finish[i] = 1;
+                i = 0;
+                continue;
+            }
+        }
+        ++i;
+    }
+    // if finish[i] == 1 for all i, then the system is in a safe state
+    for (i = 0; i < NUM_RESOURCES; i++)
+    {
+        if (finish[i] == 0)
+        {
+            printf("Request is unsafe\n");
+            return -1;
+        }
+    }
+
+    // update resources
+    for (i = 0; i < NUM_RESOURCES; i++)
+    {
+        available[i] -= request[i];
+        allocation[customer_num][i] += request[i];
+        need[customer_num][i] -= request[i];
+    }
+    return 0;
+}
+void release_resources(int customer_num, int release[])
+{
+    int i;
+    for (i = 0; i < NUM_RESOURCES; ++i)
+    {
+        if (release[i] > allocation[customer_num][i])
+        {
+            printf("Release is greater than allocation\n");
+            return;
+        }
+    }
+    for (i = 0; i < NUM_RESOURCES; ++i)
+    {
+        available[i] += release[i];
+        allocation[customer_num][i] -= release[i];
+        need[customer_num][i] += release[i];
+    }
 }
