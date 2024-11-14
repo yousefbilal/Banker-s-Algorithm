@@ -4,10 +4,12 @@
 #include <string.h>
 #include <ctype.h>
 
+/*** defines ***/
 #define NUM_CUSTOMERS 5
 #define NUM_RESOURCES 4
 #define MAX_LINE 20
 
+/*** global variables ***/
 /* the available amount of each resource */
 int available[NUM_RESOURCES];
 /*the maximum demand of each customer */
@@ -17,15 +19,25 @@ int allocation[NUM_CUSTOMERS][NUM_RESOURCES];
 /* the remaining need of each customer */
 int need[NUM_CUSTOMERS][NUM_RESOURCES];
 
+/*** function declarations ***/
+
 int request_resources(int customer_num, int request[]);
 void release_resources(int customer_num, int release[]);
+// function to print the current state of the system (invoked on * command)
 void print();
+
+// function to parse the file and store the data in a matrix
 void parse_file(FILE *fptr, int matrix[][NUM_RESOURCES], int rows, int cols);
+
+// function to copy a matrix to another matrix
 void copy_matrix(int dest[][NUM_RESOURCES], int src[][NUM_RESOURCES], int rows, int cols);
+
+// function to trim the input from leading and trailing whitespaces
 void trim(const char *input, char *output, int output_size);
 
 int main(int argc, char *argv[])
 {
+    // check if the number of arguments is correct
     if (argc != NUM_RESOURCES + 1)
     {
         printf("Usage: %s <available resources>\n", argv[0]);
@@ -34,10 +46,11 @@ int main(int argc, char *argv[])
     // intialize the available array from arguments
     for (int i = 0; i < NUM_RESOURCES; ++i)
         available[i] = atoi(argv[i + 1]);
-
+    // read contents of the file
     FILE *fptr = fopen("./resources.txt", "r");
     parse_file(fptr, maximum, NUM_CUSTOMERS, NUM_RESOURCES);
     fclose(fptr);
+
     // copy the maximum matrix to need matrix since allocation is empty
     copy_matrix(need, maximum, NUM_CUSTOMERS, NUM_RESOURCES);
     print();
@@ -49,6 +62,7 @@ int main(int argc, char *argv[])
     while (1)
     {
         printf("Enter command: ");
+        // read a line of input from the user
         if (fgets(input, sizeof input, stdin) != NULL)
         {
             // trim input from whitespaces
@@ -62,7 +76,7 @@ int main(int argc, char *argv[])
                 print();
                 continue;
             }
-
+            // split the input into command and resources
             char *token = strtok(trimmed_input, " ");
             int i = 0;
             if (token == NULL)
@@ -81,7 +95,7 @@ int main(int argc, char *argv[])
                     i++;
                 }
             }
-            // check the command RQ and RL
+            // check the command RQ or RL
             if (strcmp(command, "RQ") == 0)
             {
                 if (request_resources(resources[0], resources + 1) == 0)
@@ -105,7 +119,7 @@ int main(int argc, char *argv[])
 
 void parse_file(FILE *fptr, int matrix[][NUM_RESOURCES], int rows, int cols)
 {
-    //funcntion to parse the file and store the data in a matrix
+    // the function reads the file line by line and splits the string by comma and stroes the values in the matrix
     char line[MAX_LINE];
     int i = 0;
     while (fgets(line, 20, fptr) && i < rows)
@@ -125,7 +139,6 @@ void parse_file(FILE *fptr, int matrix[][NUM_RESOURCES], int rows, int cols)
 
 void print()
 {
-    // function to print the current state of the system (invoked on * command)
     printf("Maximum\t\tAllocation\tNeed\n");
     for (int i = 0; i < NUM_CUSTOMERS; i++)
     {
@@ -149,7 +162,6 @@ void print()
 
 void copy_matrix(int dest[][NUM_RESOURCES], int src[][NUM_RESOURCES], int rows, int cols)
 {
-    //function to copy a matrix to another matrix
     for (int i = 0; i < rows; i++)
     {
         for (int j = 0; j < cols; j++)
@@ -160,6 +172,7 @@ void copy_matrix(int dest[][NUM_RESOURCES], int src[][NUM_RESOURCES], int rows, 
 int request_resources(int customer_num, int request[])
 {
     int i;
+    // check if request is greater than need or available
     for (i = 0; i < NUM_RESOURCES; i++)
     {
         if (request[i] > need[customer_num][i])
@@ -173,8 +186,8 @@ int request_resources(int customer_num, int request[])
             return -1;
         }
     }
-    // pretend to allocate requested resources
 
+    // pretend to allocate requested resources
     for (i = 0; i < NUM_RESOURCES; i++)
     {
         available[i] -= request[i];
@@ -238,6 +251,7 @@ int request_resources(int customer_num, int request[])
     }
     return 0;
 }
+
 void release_resources(int customer_num, int release[])
 {
     int i;
